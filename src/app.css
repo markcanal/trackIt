@@ -1,1 +1,15 @@
 @import 'tailwindcss';
+
+:root {
+	--primary: #6c63ff;
+	--primary-light: #e8e7ff;
+	--success: #22c55e;
+	--danger: #ef4444;
+	--surface: #ffffff;
+	--background: #f4f6fa;
+	--border: #e2e8f0;
+	--text: #1a1a2e;
+	--text-muted: #64748b;
+	--radius: 16px;
+	--shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}

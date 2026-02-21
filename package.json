@@ -1,11 +1,13 @@
 {
-	"name": "sv-cashflow",
+	"name": "trackit",
 	"private": true,
 	"version": "0.0.1",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
+		"start": "node build/index.js",
+		"db:migrate:prod": "drizzle-kit push",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -59,6 +61,8 @@
 		"vitest-browser-svelte": "^2.0.2"
 	},
 	"dependencies": {
+		"better-auth": "^1.4.18",
+		"drizzle-orm": "^0.45.1",
 		"dotenv": "^17.3.1",
 		"firebase": "^12.9.0",
 		"firebase-svelte": "^2.0.1",
