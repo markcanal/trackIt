@@ -5,7 +5,7 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
+		"build": "vite build && drizzle-kit push",
 		"start": "node build/index.js",
 		"db:migrate:prod": "drizzle-kit push",
 		"preview": "vite preview",
