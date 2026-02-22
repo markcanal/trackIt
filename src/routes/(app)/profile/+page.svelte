@@ -130,6 +130,24 @@
 	</div>
 {/if}
 
+<!-- Buy Me a Coffee -->
+<div class="mb-4 rounded-2xl bg-white p-5 text-center shadow-sm dark:bg-[#1a1a24]">
+	<p class="mb-2 text-2xl">☕</p>
+	<p class="font-semibold text-gray-700 dark:text-gray-200">Enjoying TrackIt?</p>
+	<p class="mt-1 mb-4 text-sm text-gray-400">
+		If this app helps you manage your cashflow, consider buying me a coffee!
+	</p>
+	<a
+		href="https://www.buymeacoffee.com/markjeraldp"
+		target="_blank"
+		rel="noopener noreferrer"
+		class="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-yellow-400
+           px-6 py-3 text-sm font-semibold text-gray-900 transition hover:bg-yellow-500"
+	>
+		<span>☕</span> Buy me a coffee
+	</a>
+</div>
+
 <!-- Danger Zone -->
 <div class="rounded-2xl border border-red-100 bg-white p-5 shadow-sm">
 	<h2 class="mb-3 font-semibold text-red-400">Danger Zone</h2>
