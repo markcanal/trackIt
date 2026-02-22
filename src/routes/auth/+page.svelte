@@ -9,29 +9,43 @@
 	let password = $state('');
 	let feedback = $state('');
 	let loading = $state(false);
-
+	let feedbackType = $state<'error' | 'success'>('error');
 	const session = useSession();
 
 	$effect(() => {
 		if ($session.data?.session) goto('/dashboard');
 	});
-
 	async function handleSubmit() {
 		loading = true;
 		feedback = '';
+		feedbackType = 'error';
 		try {
 			if (mode === 'login') {
-				await signIn.email({ email, password, callbackURL: '/dashboard' });
+				const res = await signIn.email({ email, password, callbackURL: '/dashboard' });
+				if (res.error) {
+					feedback = res.error.message ?? 'Invalid email or password.';
+					return;
+				}
 			} else if (mode === 'register') {
-				await signUp.email({
+				const res = await signUp.email({
 					email,
 					password,
 					name: email.split('@')[0],
 					callbackURL: '/dashboard'
 				});
+				if (res.error) {
+					feedback = res.error.message ?? 'Could not create account.';
+					return;
+				}
 			} else if (mode === 'magic') {
-				await signIn.magicLink({ email });
+				const res = await signIn.magicLink({ email });
+				if (res.error) {
+					feedback = res.error.message ?? 'Could not send magic link.';
+					return;
+				}
 				feedback = '✅ Check your inbox for the magic link!';
+				feedbackType = 'success';
+				return;
 			}
 		} catch (e: any) {
 			feedback = e?.message ?? 'Something went wrong.';
@@ -41,12 +55,20 @@
 	}
 
 	async function handleGoogle() {
-		await signIn.social({ provider: 'google', callbackURL: '/dashboard' });
+		try {
+			await signIn.social({ provider: 'google', callbackURL: '/dashboard' });
+		} catch (e: any) {
+			feedback = e?.message ?? 'Google sign in failed.';
+		}
 	}
 
 	async function handleGuest() {
-		await signIn.anonymous();
-		goto('/dashboard');
+		try {
+			await signIn.anonymous();
+			goto('/dashboard');
+		} catch (e: any) {
+			feedback = e?.message ?? 'Could not continue as guest.';
+		}
 	}
 </script>
 
@@ -75,6 +97,15 @@
 
 		<!-- Form -->
 		<div class="space-y-3">
+			{#if feedback}
+				<p
+					class="text-center text-sm {feedbackType === 'success'
+						? 'text-violet-600'
+						: 'text-red-400'}"
+				>
+					{feedback}
+				</p>
+			{/if}
 			<input
 				type="email"
 				bind:value={email}
