@@ -3,7 +3,7 @@ import type { RequestHandler } from '@sveltejs/kit';
 import { db } from '$lib/server/db/index.js';
 import { income } from '$lib/server/db/schema.js';
 import { eq, desc } from 'drizzle-orm';
-import { verifyFirebaseToken } from '../+server.js';
+import { verifyFirebaseToken } from '$lib/server/firebase-admin.js';
 
 export const GET: RequestHandler = async ({ request }) => {
 	const user = await verifyFirebaseToken(request);
