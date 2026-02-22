@@ -13,6 +13,14 @@ export const auth = betterAuth({
 	secret: env.BETTER_AUTH_SECRET,
 	baseURL: env.BETTER_AUTH_URL,
 
+	trustedOrigins: [
+		env.BETTER_AUTH_URL,
+		'http://localhost:5173',
+		'http://localhost:4174',
+		'http://localhost:4173',
+		'https://trackit-production-ec11.up.railway.app'
+	].filter(Boolean) as string[],
+
 	emailAndPassword: {
 		enabled: true
 	},

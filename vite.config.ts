@@ -6,6 +6,10 @@ import { sveltekit } from '@sveltejs/kit/vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit(), devtoolsJson()],
+	server: {
+		port: 5173,
+		strictPort: true
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
