@@ -1,5 +1,7 @@
 <script lang="ts">
+	import { Chart } from 'chart.js/auto';
 	import type { PageData } from './$types.js';
+	import { onMount } from 'svelte';
 
 	let { data } = $props();
 
@@ -11,6 +13,53 @@
 			currency: 'PHP'
 		}).format(amount);
 	}
+
+	let canvas = $state<HTMLCanvasElement | null>(null);
+	let chart: Chart | null = null;
+
+	onMount(() => {
+		if (!canvas) return;
+		chart = new Chart(canvas, {
+			type: 'bar',
+			data: {
+				labels: data.monthlyData.map((m) => m.label),
+				datasets: [
+					{
+						label: 'Income',
+						data: data.monthlyData.map((m) => m.income),
+						backgroundColor: '#22c55e',
+						borderRadius: 6
+					},
+					{
+						label: 'Expenses',
+						data: data.monthlyData.map((m) => m.expenses),
+						backgroundColor: '#f87171',
+						borderRadius: 6
+					}
+				]
+			},
+			options: {
+				responsive: true,
+				plugins: {
+					legend: { position: 'bottom' },
+					tooltip: {
+						callbacks: {
+							label: (ctx) => formatCurrency(ctx.parsed.y ?? 0)
+						}
+					}
+				},
+				scales: {
+					y: {
+						ticks: {
+							callback: (val) => '₱' + Number(val).toLocaleString()
+						}
+					}
+				}
+			}
+		});
+
+		return () => chart?.destroy();
+	});
 </script>
 
 <!-- Header -->
@@ -43,6 +92,12 @@
 		</div>
 		<p class="text-xl font-bold text-red-400">{formatCurrency(data.totalExpenses)}</p>
 	</div>
+</div>
+
+<!-- Monthly Chart -->
+<div class="mb-4 rounded-2xl bg-white p-4 shadow-sm">
+	<h2 class="mb-3 font-semibold text-gray-700">Last 6 Months</h2>
+	<canvas bind:this={canvas}></canvas>
 </div>
 
 <!-- Scheduled Section -->
