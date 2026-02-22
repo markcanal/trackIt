@@ -38,16 +38,26 @@
 			Total: <span class="font-semibold text-green-500">{formatCurrency(total)}</span>
 		</p>
 	</div>
-	<button
-		onclick={() => {
-			showForm = !showForm;
-			editingId = null;
-		}}
-		class="cursor-pointer rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold
-           text-white transition hover:bg-violet-700"
-	>
-		{showForm ? 'Cancel' : '+ Add'}
-	</button>
+	<div class="flex gap-2">
+		<a
+			href="/export?type=income"
+			class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-500
+             transition hover:bg-gray-50"
+			download
+		>
+			⬇️ CSV
+		</a>
+		<button
+			onclick={() => {
+				showForm = !showForm;
+				editingId = null;
+			}}
+			class="cursor-pointer rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold
+             text-white transition hover:bg-violet-700"
+		>
+			{showForm ? 'Cancel' : '+ Add'}
+		</button>
+	</div>
 </div>
 
 <!-- Filters -->
