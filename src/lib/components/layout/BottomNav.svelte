@@ -7,7 +7,8 @@
 		{ href: '/dashboard', label: 'Home', icon: '🏠' },
 		{ href: '/income', label: 'Income', icon: '💰' },
 		{ href: '/expenses', label: 'Expenses', icon: '💸' },
-		{ href: '/scheduled', label: 'Scheduled', icon: '📅' }
+		{ href: '/scheduled', label: 'Scheduled', icon: '📅' },
+		{ href: '/profile', label: 'Profile', icon: '👤' }
 	];
 
 	async function handleLogout() {
