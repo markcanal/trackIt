@@ -55,3 +55,22 @@ export const DELETE: RequestHandler = async ({ request, url }) => {
 	await db.delete(scheduled).where(eq(scheduled.id, id));
 	return json({ success: true });
 };
+
+export const PATCH: RequestHandler = async ({ request, url }) => {
+	const user = await verifyFirebaseToken(request);
+	if (!user) return json({ error: 'Unauthorized' }, { status: 401 });
+
+	const id = url.searchParams.get('id');
+	if (!id) return json({ error: 'Missing id' }, { status: 400 });
+
+	const body = await request.json();
+	const { label, amount, category, note, nextDueDate } = body;
+
+	const [item] = await db
+		.update(scheduled)
+		.set({ label, amount: String(amount), category, note, nextDueDate: new Date(nextDueDate) })
+		.where(eq(scheduled.id, id))
+		.returning();
+
+	return json(item);
+};
