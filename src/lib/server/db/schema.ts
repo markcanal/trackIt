@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, numeric, timestamp, boolean } from 'drizzle-orm/pg-core';
+import { boolean, numeric, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
 
 // Reference to Better Auth's user table
 const userId = () => text('user_id').notNull();
@@ -41,6 +41,15 @@ export const scheduled = pgTable('scheduled', {
 	createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow()
 });
 
+export const fcmTokens = pgTable('fcm_tokens', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	userId: text('user_id').notNull(),
+	token: text('token').notNull().unique(),
+	createdAt: timestamp('created_at').defaultNow().notNull()
+});
+
 // ── Types ─────────────────────────────────────────────────────
 export type Income = typeof income.$inferSelect;
 export type NewIncome = typeof income.$inferInsert;
@@ -48,3 +57,5 @@ export type Expense = typeof expenses.$inferSelect;
 export type NewExpense = typeof expenses.$inferInsert;
 export type Scheduled = typeof scheduled.$inferSelect;
 export type NewScheduled = typeof scheduled.$inferInsert;
+export type FcmToken = typeof fcmTokens.$inferSelect;
+export type NewFcmToken = typeof fcmTokens.$inferInsert;
