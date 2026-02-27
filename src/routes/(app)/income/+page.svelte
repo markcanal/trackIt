@@ -1,290 +1,490 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import type { PageData } from './$types';
 
-	let { data, form } = $props();
+	let { data }: { data: PageData } = $props();
 
 	let showForm = $state(false);
 	let editingId = $state<string | null>(null);
+	let showFilters = $state(false);
 
 	const categories = ['general', 'salary', 'freelance', 'investment', 'gift', 'other'];
+	const total = $derived(data.items.reduce((s, i) => s + parseFloat(i.amount), 0));
 
-	function formatCurrency(amount: number) {
-		return new Intl.NumberFormat('en-PH', {
-			style: 'currency',
-			currency: 'PHP'
-		}).format(amount);
+	function fmt(n: number) {
+		return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2 });
 	}
 
-	function formatDate(date: string | Date) {
-		return new Intl.DateTimeFormat('en-PH', {
-			month: 'short',
-			day: 'numeric',
-			year: 'numeric'
-		}).format(new Date(date));
-	}
-
-	function toInputDate(date: string | Date) {
-		return new Date(date).toISOString().split('T')[0];
-	}
-
-	const total = $derived(data.items.reduce((sum: number, i: any) => sum + Number(i.amount), 0));
+	const categoryEmoji: Record<string, string> = {
+		general: '📦',
+		salary: '💼',
+		freelance: '💻',
+		investment: '📈',
+		gift: '🎁',
+		other: '🎯'
+	};
 </script>
 
-<!-- Header -->
-<div class="mb-6 flex items-center justify-between">
-	<div>
-		<h1 class="text-2xl font-bold text-gray-800">Income 💰</h1>
-		<p class="text-sm text-gray-400">
-			Total: <span class="font-semibold text-green-500">{formatCurrency(total)}</span>
-		</p>
+<div class="page">
+	<div
+		class="blob"
+		style="width:350px;height:350px;background:#a5f3fc;top:-60px;right:-60px;opacity:0.15"
+	></div>
+
+	<!-- Header -->
+	<div class="page-header fade-up">
+		<div>
+			<h1>Income 💰</h1>
+			<p class="total-badge income-badge">Total: {fmt(total)}</p>
+		</div>
+		<div class="header-actions">
+			<button class="btn btn-ghost" onclick={() => (showFilters = !showFilters)}>
+				🔍 {showFilters ? 'Hide' : 'Filter'}
+			</button>
+			<button
+				class="btn btn-primary"
+				onclick={() => {
+					showForm = !showForm;
+					editingId = null;
+				}}
+			>
+				{showForm ? '✕ Cancel' : '+ Add'}
+			</button>
+		</div>
 	</div>
-	<div class="flex gap-2">
-		<a
-			href="/export?type=income"
-			class="rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-500
-             transition hover:bg-gray-50"
-			download
-		>
-			⬇️ CSV
-		</a>
-		<button
-			onclick={() => {
-				showForm = !showForm;
-				editingId = null;
-			}}
-			class="cursor-pointer rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold
-             text-white transition hover:bg-violet-700"
-		>
-			{showForm ? 'Cancel' : '+ Add'}
-		</button>
+
+	<!-- Filter Panel -->
+	{#if showFilters}
+		<div class="card filter-card fade-up">
+			<form method="GET" class="filter-form">
+				<div class="filter-row">
+					<div class="field">
+						<label for="" class="label">From</label>
+						<input class="input" type="date" name="from" value={data.filters?.from ?? ''} />
+					</div>
+					<div class="field">
+						<label for="" class="label">To</label>
+						<input class="input" type="date" name="to" value={data.filters?.to ?? ''} />
+					</div>
+					<div class="field">
+						<label for="" class="label">Category</label>
+						<select class="input" name="category">
+							<option value="">All</option>
+							{#each categories as cat}
+								<option value={cat} selected={data.filters?.category === cat}>
+									{categoryEmoji[cat]}
+									{cat}
+								</option>
+							{/each}
+						</select>
+					</div>
+				</div>
+				<div class="filter-actions">
+					<button class="btn btn-primary" type="submit">Apply Filters</button>
+					<a href="/income" class="btn btn-ghost">Clear</a>
+				</div>
+			</form>
+		</div>
+	{/if}
+
+	<!-- Add Form -->
+	{#if showForm}
+		<div class="card form-card fade-up">
+			<h3>✨ New Income</h3>
+			<form
+				method="POST"
+				action="?/add"
+				use:enhance={() => {
+					return ({ result }) => {
+						if (result.type === 'success') {
+							showForm = false;
+						}
+					};
+				}}
+			>
+				<div class="form-grid">
+					<div class="field">
+						<label for="" class="label">Label</label>
+						<input class="input" name="label" placeholder="e.g. Monthly salary" required />
+					</div>
+					<div class="field">
+						<label for="" class="label">Amount</label>
+						<input
+							class="input"
+							name="amount"
+							type="number"
+							step="0.01"
+							placeholder="0.00"
+							required
+						/>
+					</div>
+					<div class="field">
+						<label for="" class="label">Category</label>
+						<select class="input" name="category">
+							{#each categories as cat}
+								<option value={cat}>{categoryEmoji[cat]} {cat}</option>
+							{/each}
+						</select>
+					</div>
+					<div class="field">
+						<label for="" class="label">Date</label>
+						<input
+							class="input"
+							name="date"
+							type="date"
+							value={new Date().toISOString().split('T')[0]}
+							required
+						/>
+					</div>
+				</div>
+				<div class="field">
+					<label for="" class="label">Note (optional)</label>
+					<input class="input" name="note" placeholder="Add a note..." />
+				</div>
+				<button class="btn btn-primary" type="submit" style="margin-top:8px">Save Income 💰</button>
+			</form>
+		</div>
+	{/if}
+
+	<!-- List -->
+	<div class="items-list fade-up-2">
+		{#if data.items.length === 0}
+			<div class="empty-card card">
+				<span>💰</span>
+				<h3>No income yet</h3>
+				<p>Add your first income entry to get started!</p>
+				<button class="btn btn-primary" onclick={() => (showForm = true)}>+ Add Income</button>
+			</div>
+		{:else}
+			{#each data.items as item, i}
+				<div class="item-card card" style="animation-delay: {i * 0.05}s">
+					{#if editingId === item.id}
+						<!-- Edit Form -->
+						<form
+							method="POST"
+							action="?/edit"
+							use:enhance={() => {
+								return ({ result }) => {
+									if (result.type === 'success') editingId = null;
+								};
+							}}
+						>
+							<input type="hidden" name="id" value={item.id} />
+							<h4 class="edit-title">✏️ Edit Income</h4>
+							<div class="form-grid">
+								<div class="field">
+									<label for="" class="label">Label</label>
+									<input class="input" name="label" value={item.label} required />
+								</div>
+								<div class="field">
+									<label for="" class="label">Amount</label>
+									<input
+										class="input"
+										name="amount"
+										type="number"
+										step="0.01"
+										value={item.amount}
+										required
+									/>
+								</div>
+								<div class="field">
+									<label for="" class="label">Category</label>
+									<select class="input" name="category">
+										{#each categories as cat}
+											<option value={cat} selected={item.category === cat}
+												>{categoryEmoji[cat]} {cat}</option
+											>
+										{/each}
+									</select>
+								</div>
+								<div class="field">
+									<label for="" class="label">Date</label>
+									<input
+										class="input"
+										name="date"
+										type="date"
+										value={item.date?.toString().split('T')[0]}
+										required
+									/>
+								</div>
+							</div>
+							<div class="field">
+								<label for="" class="label">Note</label>
+								<input class="input" name="note" value={item.note ?? ''} />
+							</div>
+							<div class="edit-actions">
+								<button class="btn btn-primary" type="submit">Save</button>
+								<button class="btn btn-ghost" type="button" onclick={() => (editingId = null)}
+									>Cancel</button
+								>
+							</div>
+						</form>
+					{:else}
+						<!-- View -->
+						<div class="item-view">
+							<div class="item-icon">{categoryEmoji[item.category] ?? '📦'}</div>
+							<div class="item-info">
+								<p class="item-label">{item.label}</p>
+								<div class="item-meta">
+									<span class="badge" style="background:var(--green-light);color:var(--green)"
+										>{item.category}</span
+									>
+									{#if item.note}<span class="item-note">{item.note}</span>{/if}
+								</div>
+								<p class="item-date">
+									{new Date(item.date).toLocaleDateString('en-PH', {
+										month: 'short',
+										day: 'numeric',
+										year: 'numeric'
+									})}
+								</p>
+							</div>
+							<div class="item-right">
+								<p class="item-amount income-amount">{fmt(parseFloat(item.amount))}</p>
+								<div class="item-actions">
+									<button class="icon-btn" onclick={() => (editingId = item.id)} title="Edit"
+										>✏️</button
+									>
+									<form method="POST" action="?/delete" use:enhance>
+										<input type="hidden" name="id" value={item.id} />
+										<button class="icon-btn danger" type="submit" title="Delete">🗑️</button>
+									</form>
+								</div>
+							</div>
+						</div>
+					{/if}
+				</div>
+			{/each}
+		{/if}
 	</div>
 </div>
 
-<!-- Filters -->
-<form method="GET" class="mb-4 space-y-3 rounded-2xl bg-white p-4 shadow-sm">
-	<p class="text-sm font-semibold text-gray-600">Filter</p>
-	<div class="grid grid-cols-2 gap-2">
-		<div>
-			<label for="from" class="mb-1 block text-xs text-gray-400">From</label>
-			<input
-				id="from"
-				name="from"
-				type="date"
-				value={data.filters.from}
-				class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-			/>
-		</div>
-		<div>
-			<label for="to" class="mb-1 block text-xs text-gray-400">To</label>
-			<input
-				id="to"
-				name="to"
-				type="date"
-				value={data.filters.to}
-				class="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-			/>
-		</div>
-	</div>
-	<select
-		id="category"
-		name="category"
-		class="w-full rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-	>
-		<option value="">All Categories</option>
-		{#each categories as cat}
-			<option value={cat} selected={data.filters.category === cat}>
-				{cat.charAt(0).toUpperCase() + cat.slice(1)}
-			</option>
-		{/each}
-	</select>
-	<div class="flex gap-2">
-		<button
-			type="submit"
-			class="flex-1 cursor-pointer rounded-xl bg-violet-600 py-2 text-sm font-semibold text-white transition hover:bg-violet-700"
-		>
-			Apply
-		</button>
-		<a
-			href="/income"
-			class="flex-1 rounded-xl border border-gray-200 py-2 text-center text-sm font-semibold text-gray-500 transition hover:bg-gray-50"
-		>
-			Clear
-		</a>
-	</div>
-</form>
+<style>
+	.page {
+		padding: 32px;
+		max-width: 800px;
+		position: relative;
+	}
 
-<!-- Add Form -->
-{#if showForm}
-	<form
-		method="POST"
-		action="?/add"
-		use:enhance={() => {
-			return ({ update }) => {
-				update();
-				showForm = false;
-			};
-		}}
-		class="mb-4 space-y-3 rounded-2xl bg-white p-4 shadow-sm"
-	>
-		{#if form?.error}
-			<p class="text-sm text-red-400">{form.error}</p>
-		{/if}
-		<input
-			name="label"
-			placeholder="Label (e.g. Monthly Salary)"
-			required
-			class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-		/>
-		<input
-			name="amount"
-			type="number"
-			step="0.01"
-			min="0"
-			placeholder="Amount"
-			required
-			class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-		/>
-		<select
-			name="category"
-			class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-		>
-			{#each categories as cat}
-				<option value={cat}>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option>
-			{/each}
-		</select>
-		<input
-			name="date"
-			type="date"
-			required
-			value={new Date().toISOString().split('T')[0]}
-			class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-		/>
-		<textarea
-			name="note"
-			placeholder="Note (optional)"
-			rows="2"
-			class="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-		></textarea>
-		<button
-			type="submit"
-			class="w-full cursor-pointer rounded-xl bg-violet-600 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
-		>
-			Save Income
-		</button>
-	</form>
-{/if}
+	.page-header {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		margin-bottom: 24px;
+		gap: 16px;
+	}
 
-<!-- List -->
-{#if data.items.length === 0}
-	<div class="rounded-2xl bg-white p-8 text-center shadow-sm">
-		<p class="mb-2 text-3xl">💰</p>
-		<p class="text-sm text-gray-400">No income recorded yet.</p>
-	</div>
-{:else}
-	<div class="space-y-3">
-		{#each data.items as item}
-			{#if editingId === item.id}
-				<!-- Edit Form -->
-				<form
-					method="POST"
-					action="?/edit"
-					use:enhance={() => {
-						return ({ update }) => {
-							update();
-							editingId = null;
-						};
-					}}
-					class="space-y-3 rounded-2xl border-2 border-violet-200 bg-white p-4 shadow-sm"
-				>
-					<input type="hidden" name="id" value={item.id} />
-					<input
-						name="label"
-						value={item.label}
-						required
-						class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-					/>
-					<input
-						name="amount"
-						type="number"
-						step="0.01"
-						min="0"
-						value={Number(item.amount)}
-						required
-						class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-					/>
-					<select
-						name="category"
-						class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-					>
-						{#each categories as cat}
-							<option value={cat} selected={cat === item.category}
-								>{cat.charAt(0).toUpperCase() + cat.slice(1)}</option
-							>
-						{/each}
-					</select>
-					<input
-						name="date"
-						type="date"
-						value={toInputDate(item.date)}
-						required
-						class="w-full rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-					/>
-					<textarea
-						name="note"
-						rows="2"
-						class="w-full resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm transition outline-none focus:ring-2 focus:ring-violet-500"
-						>{item.note ?? ''}</textarea
-					>
-					<div class="flex gap-2">
-						<button
-							type="submit"
-							class="flex-1 cursor-pointer rounded-xl bg-violet-600 py-3 text-sm font-semibold text-white transition hover:bg-violet-700"
-						>
-							Save Changes
-						</button>
-						<button
-							type="button"
-							onclick={() => (editingId = null)}
-							class="flex-1 cursor-pointer rounded-xl border border-gray-200 py-3 text-sm font-semibold text-gray-500 transition hover:bg-gray-50"
-						>
-							Cancel
-						</button>
-					</div>
-				</form>
-			{:else}
-				<!-- Item Card -->
-				<div class="flex items-center justify-between gap-3 rounded-2xl bg-white p-4 shadow-sm">
-					<div class="min-w-0 flex-1">
-						<p class="truncate font-semibold text-gray-800">{item.label}</p>
-						<p class="text-xs text-gray-400 capitalize">
-							{item.category} · {formatDate(item.date)}
-						</p>
-						{#if item.note}
-							<p class="mt-0.5 truncate text-xs text-gray-400">{item.note}</p>
-						{/if}
-					</div>
-					<div class="flex shrink-0 items-center gap-2">
-						<p class="font-bold text-green-500">{formatCurrency(Number(item.amount))}</p>
-						<button
-							onclick={() => (editingId = item.id)}
-							class="cursor-pointer text-lg text-gray-300 transition hover:text-violet-400"
-							aria-label="Edit"
-						>
-							✏️
-						</button>
-						<form method="POST" action="?/delete" use:enhance>
-							<input type="hidden" name="id" value={item.id} />
-							<button
-								type="submit"
-								class="cursor-pointer text-lg text-gray-300 transition hover:text-red-400"
-								aria-label="Delete"
-							>
-								🗑️
-							</button>
-						</form>
-					</div>
-				</div>
-			{/if}
-		{/each}
-	</div>
-{/if}
+	.page-header h1 {
+		font-size: 28px;
+		margin: 0 0 6px;
+	}
+
+	.total-badge {
+		display: inline-flex;
+		padding: 4px 14px;
+		border-radius: 99px;
+		font-size: 13px;
+		font-weight: 700;
+		margin: 0;
+	}
+
+	.income-badge {
+		background: var(--green-light);
+		color: var(--green);
+	}
+
+	.header-actions {
+		display: flex;
+		gap: 10px;
+		flex-shrink: 0;
+	}
+
+	.filter-card {
+		padding: 20px;
+		margin-bottom: 16px;
+	}
+
+	.filter-form {
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
+
+	.filter-row {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 12px;
+	}
+
+	.filter-actions {
+		display: flex;
+		gap: 10px;
+	}
+
+	.form-card {
+		padding: 24px;
+		margin-bottom: 16px;
+	}
+	.form-card h3 {
+		margin: 0 0 20px;
+		font-size: 18px;
+	}
+
+	.form-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 12px;
+		margin-bottom: 12px;
+	}
+
+	.field {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.items-list {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+	}
+
+	.item-card {
+		padding: 18px 20px;
+		animation: fadeUp 0.3s ease both;
+	}
+
+	.item-view {
+		display: flex;
+		align-items: center;
+		gap: 14px;
+	}
+
+	.item-icon {
+		width: 44px;
+		height: 44px;
+		background: var(--violet-light);
+		border-radius: 14px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 20px;
+		flex-shrink: 0;
+	}
+
+	.item-info {
+		flex: 1;
+		min-width: 0;
+	}
+	.item-label {
+		font-size: 15px;
+		font-weight: 700;
+		margin: 0 0 4px;
+	}
+	.item-meta {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		margin-bottom: 4px;
+		flex-wrap: wrap;
+	}
+	.item-note {
+		font-size: 12px;
+		color: var(--text-muted);
+	}
+	.item-date {
+		font-size: 11px;
+		color: var(--text-muted);
+		font-weight: 600;
+		margin: 0;
+	}
+
+	.item-right {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 8px;
+		flex-shrink: 0;
+	}
+	.item-amount {
+		font-size: 17px;
+		font-weight: 800;
+		margin: 0;
+	}
+	.income-amount {
+		color: var(--green);
+	}
+
+	.item-actions {
+		display: flex;
+		gap: 4px;
+	}
+
+	.icon-btn {
+		width: 32px;
+		height: 32px;
+		border-radius: 10px;
+		border: none;
+		background: var(--surface2);
+		cursor: pointer;
+		font-size: 14px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s;
+	}
+
+	.icon-btn:hover {
+		background: var(--violet-light);
+		transform: scale(1.1);
+	}
+	.icon-btn.danger:hover {
+		background: var(--red-light);
+	}
+
+	.edit-title {
+		margin: 0 0 16px;
+		font-size: 16px;
+	}
+	.edit-actions {
+		display: flex;
+		gap: 10px;
+		margin-top: 12px;
+	}
+
+	.empty-card {
+		padding: 48px;
+		text-align: center;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.empty-card span {
+		font-size: 48px;
+	}
+	.empty-card h3 {
+		margin: 0;
+		font-size: 20px;
+	}
+	.empty-card p {
+		color: var(--text-muted);
+		margin: 0 0 16px;
+		font-size: 14px;
+	}
+
+	@media (max-width: 640px) {
+		.page {
+			padding: 20px 16px;
+		}
+		.form-grid {
+			grid-template-columns: 1fr;
+		}
+		.filter-row {
+			grid-template-columns: 1fr;
+		}
+		.item-note {
+			display: none;
+		}
+	}
+</style>
