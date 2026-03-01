@@ -121,7 +121,7 @@
 <style>
 	.page {
 		padding: 32px;
-		max-width: 600px;
+		max-width: 100%;
 		position: relative;
 	}
 

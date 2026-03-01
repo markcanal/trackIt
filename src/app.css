@@ -41,7 +41,8 @@
 * {
 	box-sizing: border-box;
 }
-
+html,
+main,
 body {
 	font-family: 'Nunito', sans-serif;
 	background: var(--bg);
@@ -264,27 +265,13 @@ body {
 
 /* Mobile-First Media Queries */
 @media (min-width: 768px) {
-	/* Tablet+ enhancements */
-	body {
-		padding: 1rem; /* Larger padding */
-	}
-
 	.btn {
-		padding: 0.75rem 1.5rem; /* Slightly larger buttons */
-	}
-
-	.card {
-		padding: 1.5rem; /* More space in cards */
+		padding: 0.75rem 1.5rem;
 	}
 }
 
 @media (min-width: 1024px) {
-	/* Desktop enhancements */
-	body {
-		font-size: 1.1rem; /* Slightly larger base font */
-	}
-
 	.blob {
-		filter: blur(100px); /* Enhance blur on larger screens */
+		filter: blur(100px);
 	}
 }

@@ -95,9 +95,10 @@
 				method="POST"
 				action="?/add"
 				use:enhance={() => {
-					return ({ result }) => {
+					return ({ result, update }) => {
 						if (result.type === 'success') {
 							showForm = false;
+							update();
 						}
 					};
 				}}
@@ -164,8 +165,9 @@
 							method="POST"
 							action="?/edit"
 							use:enhance={() => {
-								return ({ result }) => {
+								return ({ result, update }) => {
 									if (result.type === 'success') editingId = null;
+									update();
 								};
 							}}
 						>
@@ -262,7 +264,7 @@
 <style>
 	.page {
 		padding: 32px;
-		max-width: 800px;
+		max-width: 100%;
 		position: relative;
 	}
 
@@ -475,7 +477,7 @@
 
 	@media (max-width: 640px) {
 		.page {
-			padding: 20px 16px;
+			padding: 20px 16px 90px;
 		}
 		.form-grid {
 			grid-template-columns: 1fr;

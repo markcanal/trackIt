@@ -185,7 +185,7 @@
 <style>
 	.dash {
 		padding: 32px;
-		max-width: 1000px;
+		max-width: 100%;
 		position: relative;
 	}
 	.dash-header {
@@ -316,6 +316,7 @@
 		display: grid;
 		/* grid-template-columns: 1.6fr 1fr; */
 		gap: 20px;
+		margin-bottom: 20px;
 	}
 	.card {
 		padding: 24px;
@@ -354,6 +355,7 @@
 	}
 	.chart-wrap {
 		height: 230px;
+		margin-bottom: 20px;
 	}
 	.see-all {
 		font-size: 13px;
