@@ -16,6 +16,13 @@
 		'other'
 	];
 	const total = $derived(data.items.reduce((s, i) => s + parseFloat(i.amount), 0));
+	const topCategory = $derived(() => {
+		const grouped = data.items.reduce((acc: Record<string, number>, i) => {
+			acc[i.category] = (acc[i.category] ?? 0) + parseFloat(i.amount);
+			return acc;
+		}, {});
+		return Object.entries(grouped).sort((a, b) => b[1] - a[1])[0]?.[0] ?? '-';
+	});
 	function fmt(n: number) {
 		return '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2 });
 	}
@@ -34,21 +41,22 @@
 <div class="page">
 	<div
 		class="blob"
-		style="width:350px;height:350px;background:#fee2e2;top:-60px;right:-60px;opacity:0.15"
+		style="width:300px;height:300px;background:#fee2e2;top:-60px;right:-60px;opacity:0.2"
 	></div>
+
 	<!-- Header -->
 	<div class="page-header fade-up">
 		<div>
 			<h1>Expenses 💸</h1>
-			<p class="total-badge expense-badge">Total: {fmt(total)}</p>
+			<span class="total-badge expense-badge">Total: {fmt(total)}</span>
 		</div>
 		<div class="header-actions">
 			<a href="/export?type=expenses" class="btn btn-ghost" download>⬇️ CSV</a>
 			<button class="btn btn-ghost" onclick={() => (showFilters = !showFilters)}>
-				🔍 {showFilters ? 'Hide' : 'Filter'}
+				{showFilters ? '✕' : '🔍'}
 			</button>
 			<button
-				class="btn btn-primary"
+				class="btn btn-danger-soft"
 				onclick={() => {
 					showForm = !showForm;
 					editingId = null;
@@ -58,6 +66,42 @@
 			</button>
 		</div>
 	</div>
+
+	<!-- Summary Strip -->
+	{#if data.items.length > 0}
+		<div class="summary-strip fade-up-1">
+			<div class="summary-item">
+				<span class="summary-icon">📊</span>
+				<div>
+					<p class="summary-label">Entries</p>
+					<p class="summary-val">{data.items.length}</p>
+				</div>
+			</div>
+			<div class="summary-divider"></div>
+			<div class="summary-item">
+				<span class="summary-icon">🏆</span>
+				<div>
+					<p class="summary-label">Top Category</p>
+					<p class="summary-val">{categoryEmoji[topCategory()]} {topCategory()}</p>
+				</div>
+			</div>
+			<div class="summary-divider"></div>
+			<div class="summary-item">
+				<span class="summary-icon">📅</span>
+				<div>
+					<p class="summary-label">This month</p>
+					<p class="summary-val">
+						{fmt(
+							data.items
+								.filter((i) => new Date(i.date).getMonth() === new Date().getMonth())
+								.reduce((s, i) => s + parseFloat(i.amount), 0)
+						)}
+					</p>
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Filter Panel -->
 	{#if showFilters}
 		<div class="card filter-card fade-up">
@@ -78,9 +122,9 @@
 						<input id="to" class="input" type="date" name="to" value={data.filters?.to ?? ''} />
 					</div>
 					<div class="field">
-						<label for="category" class="label">Category</label>
-						<select id="category" class="input" name="category">
-							<option value="">All</option>
+						<label for="cat-filter" class="label">Category</label>
+						<select id="cat-filter" class="input" name="category">
+							<option value="">All categories</option>
 							{#each categories as cat}
 								<option value={cat} selected={data.filters?.category === cat}>
 									{categoryEmoji[cat]}
@@ -91,16 +135,17 @@
 					</div>
 				</div>
 				<div class="filter-actions">
-					<button class="btn btn-primary" type="submit">Apply Filters</button>
+					<button class="btn btn-danger-soft" type="submit">Apply</button>
 					<a href="/expenses" class="btn btn-ghost">Clear</a>
 				</div>
 			</form>
 		</div>
 	{/if}
+
 	<!-- Add Form -->
 	{#if showForm}
 		<div class="card form-card fade-up">
-			<h3>✨ New Expense</h3>
+			<h3>➕ New Expense</h3>
 			<form
 				method="POST"
 				action="?/add"
@@ -115,13 +160,13 @@
 			>
 				<div class="form-grid">
 					<div class="field">
-						<label for="label" class="label">Label</label>
-						<input id="label" class="input" name="label" placeholder="e.g. Grocery" required />
+						<label for="add-label" class="label">Label</label>
+						<input id="add-label" class="input" name="label" placeholder="e.g. Grocery" required />
 					</div>
 					<div class="field">
-						<label for="amount" class="label">Amount</label>
+						<label for="add-amount" class="label">Amount</label>
 						<input
-							id="amount"
+							id="add-amount"
 							class="input"
 							name="amount"
 							type="number"
@@ -131,17 +176,17 @@
 						/>
 					</div>
 					<div class="field">
-						<label for="category" class="label">Category</label>
-						<select id="category" class="input" name="category">
+						<label for="add-cat" class="label">Category</label>
+						<select id="add-cat" class="input" name="category">
 							{#each categories as cat}
 								<option value={cat}>{categoryEmoji[cat]} {cat}</option>
 							{/each}
 						</select>
 					</div>
 					<div class="field">
-						<label for="date" class="label">Date</label>
+						<label for="add-date" class="label">Date</label>
 						<input
-							id="date"
+							id="add-date"
 							class="input"
 							name="date"
 							type="date"
@@ -151,26 +196,26 @@
 					</div>
 				</div>
 				<div class="field">
-					<label for="note" class="label">Note (optional)</label>
-					<input id="note" class="input" name="note" placeholder="Add a note..." />
+					<label for="add-note" class="label">Note (optional)</label>
+					<input id="add-note" class="input" name="note" placeholder="Add a note..." />
 				</div>
-				<button class="btn btn-primary" type="submit" style="margin-top:8px">Save Expense 💸</button
-				>
+				<button class="btn btn-danger-soft full-btn" type="submit">Save Expense 💸</button>
 			</form>
 		</div>
 	{/if}
+
 	<!-- List -->
 	<div class="items-list fade-up-2">
 		{#if data.items.length === 0}
 			<div class="empty-card card">
 				<span>💸</span>
 				<h3>No expenses yet</h3>
-				<p>Add your first expense entry to get started!</p>
-				<button class="btn btn-primary" onclick={() => (showForm = true)}>+ Add Expense</button>
+				<p>Track your spending by adding your first expense!</p>
+				<button class="btn btn-danger-soft" onclick={() => (showForm = true)}>+ Add Expense</button>
 			</div>
 		{:else}
 			{#each data.items as item, i}
-				<div class="item-card card" style="animation-delay: {i * 0.05}s">
+				<div class="item-card card" style="animation-delay: {i * 0.04}s">
 					{#if editingId === item.id}
 						<form
 							method="POST"
@@ -188,13 +233,13 @@
 							<h4 class="edit-title">✏️ Edit Expense</h4>
 							<div class="form-grid">
 								<div class="field">
-									<label for="edit-label" class="label">Label</label>
-									<input id="edit-label" class="input" name="label" value={item.label} required />
+									<label for="e-label" class="label">Label</label>
+									<input id="e-label" class="input" name="label" value={item.label} required />
 								</div>
 								<div class="field">
-									<label for="edit-amount" class="label">Amount</label>
+									<label for="e-amount" class="label">Amount</label>
 									<input
-										id="edit-amount"
+										id="e-amount"
 										class="input"
 										name="amount"
 										type="number"
@@ -204,8 +249,8 @@
 									/>
 								</div>
 								<div class="field">
-									<label for="edit-category" class="label">Category</label>
-									<select id="edit-category" class="input" name="category">
+									<label for="e-cat" class="label">Category</label>
+									<select id="e-cat" class="input" name="category">
 										{#each categories as cat}
 											<option value={cat} selected={item.category === cat}
 												>{categoryEmoji[cat]} {cat}</option
@@ -214,9 +259,9 @@
 									</select>
 								</div>
 								<div class="field">
-									<label for="edit-date" class="label">Date</label>
+									<label for="e-date" class="label">Date</label>
 									<input
-										id="edit-date"
+										id="e-date"
 										class="input"
 										name="date"
 										type="date"
@@ -226,11 +271,11 @@
 								</div>
 							</div>
 							<div class="field">
-								<label for="edit-note" class="label">Note</label>
-								<input id="edit-note" class="input" name="note" value={item.note ?? ''} />
+								<label for="e-note" class="label">Note</label>
+								<input id="e-note" class="input" name="note" value={item.note ?? ''} />
 							</div>
 							<div class="edit-actions">
-								<button class="btn btn-primary" type="submit">Save</button>
+								<button class="btn btn-danger-soft" type="submit">Save</button>
 								<button class="btn btn-ghost" type="button" onclick={() => (editingId = null)}
 									>Cancel</button
 								>
@@ -242,10 +287,10 @@
 							<div class="item-info">
 								<p class="item-label">{item.label}</p>
 								<div class="item-meta">
-									<span class="badge" style="background:var(--red-light);color:var(--red)"
-										>{item.category}</span
+									<span class="badge expense-cat"
+										>{categoryEmoji[item.category]} {item.category}</span
 									>
-									{#if item.note}<span class="item-note">{item.note}</span>{/if}
+									{#if item.note}<span class="item-note">· {item.note}</span>{/if}
 								</div>
 								<p class="item-date">
 									{new Date(item.date).toLocaleDateString('en-PH', {
@@ -278,116 +323,219 @@
 <style>
 	.page {
 		padding: 32px;
-		max-width: 800px;
+		max-width: 100%;
 		position: relative;
 	}
+
 	.page-header {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
-		margin-bottom: 24px;
-		gap: 16px;
+		margin-bottom: 16px;
+		gap: 12px;
 	}
 	.page-header h1 {
-		font-size: 28px;
+		font-size: 26px;
 		margin: 0 0 6px;
 	}
+
 	.total-badge {
 		display: inline-flex;
-		padding: 4px 14px;
+		padding: 4px 12px;
 		border-radius: 99px;
-		font-size: 13px;
+		font-size: 12px;
 		font-weight: 700;
-		margin: 0;
 	}
 	.expense-badge {
 		background: var(--red-light);
 		color: var(--red);
 	}
+
 	.header-actions {
 		display: flex;
+		gap: 8px;
+		flex-shrink: 0;
+		align-items: center;
+	}
+
+	/* Summary strip */
+	.summary-strip {
+		display: flex;
+		align-items: center;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: 20px;
+		padding: 16px 20px;
+		margin-bottom: 16px;
+		box-shadow: var(--shadow);
+		gap: 0;
+	}
+	.summary-item {
+		flex: 1;
+		display: flex;
+		align-items: center;
 		gap: 10px;
+	}
+	.summary-icon {
+		font-size: 22px;
+	}
+	.summary-label {
+		font-size: 10px;
+		font-weight: 700;
+		color: var(--text-muted);
+		text-transform: uppercase;
+		letter-spacing: 0.4px;
+		margin: 0 0 2px;
+	}
+	.summary-val {
+		font-size: 13px;
+		font-weight: 800;
+		color: var(--text);
+		margin: 0;
+	}
+	.summary-divider {
+		width: 1px;
+		height: 36px;
+		background: var(--border);
+		margin: 0 12px;
 		flex-shrink: 0;
 	}
+
+	/* Buttons */
+	.btn-danger-soft {
+		background: var(--red-light);
+		color: var(--red);
+		border: none;
+		padding: 10px 18px;
+		border-radius: 99px;
+		font-family: 'Nunito', sans-serif;
+		font-weight: 700;
+		font-size: 13px;
+		cursor: pointer;
+		transition: all 0.2s;
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+	.btn-danger-soft:hover {
+		background: var(--red);
+		color: white;
+		transform: translateY(-1px);
+	}
+	.full-btn {
+		width: 100%;
+		justify-content: center;
+		margin-top: 8px;
+		padding: 13px;
+		font-size: 14px;
+	}
+
+	/* Filter */
 	.filter-card {
 		padding: 20px;
-		margin-bottom: 16px;
+		margin-bottom: 14px;
 	}
 	.filter-form {
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: 14px;
 	}
 	.filter-row {
 		display: grid;
-		grid-template-columns: repeat(3, 1fr);
-		gap: 12px;
+		grid-template-columns: 1fr 1fr 1fr;
+		gap: 10px;
 	}
 	.filter-actions {
 		display: flex;
-		gap: 10px;
+		gap: 8px;
 	}
+
+	/* Form */
 	.form-card {
-		padding: 24px;
-		margin-bottom: 16px;
+		padding: 22px;
+		margin-bottom: 14px;
 	}
 	.form-card h3 {
-		margin: 0 0 20px;
-		font-size: 18px;
+		margin: 0 0 18px;
+		font-size: 17px;
 	}
 	.form-grid {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: 12px;
-		margin-bottom: 12px;
+		gap: 10px;
+		margin-bottom: 10px;
 	}
 	.field {
 		display: flex;
 		flex-direction: column;
+		gap: 5px;
 	}
+
+	/* List */
 	.items-list {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
+		gap: 8px;
 	}
+
 	.item-card {
-		padding: 18px 20px;
+		padding: 16px 18px;
 		animation: fadeUp 0.3s ease both;
+		transition: transform 0.15s;
 	}
+	.item-card:hover {
+		transform: translateY(-1px);
+	}
+
 	.item-view {
 		display: flex;
 		align-items: center;
-		gap: 14px;
+		gap: 12px;
 	}
+
 	.item-icon {
-		width: 44px;
-		height: 44px;
+		width: 42px;
+		height: 42px;
 		background: var(--red-light);
 		border-radius: 14px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 20px;
+		font-size: 19px;
 		flex-shrink: 0;
 	}
+
 	.item-info {
 		flex: 1;
 		min-width: 0;
 	}
 	.item-label {
-		font-size: 15px;
+		font-size: 14px;
 		font-weight: 700;
 		margin: 0 0 4px;
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
 	}
 	.item-meta {
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		margin-bottom: 4px;
+		gap: 6px;
+		margin-bottom: 3px;
 		flex-wrap: wrap;
 	}
+
+	.expense-cat {
+		background: var(--red-light);
+		color: var(--red);
+		padding: 2px 8px;
+		border-radius: 99px;
+		font-size: 11px;
+		font-weight: 700;
+	}
+
 	.item-note {
-		font-size: 12px;
+		font-size: 11px;
 		color: var(--text-muted);
 	}
 	.item-date {
@@ -396,33 +544,35 @@
 		font-weight: 600;
 		margin: 0;
 	}
+
 	.item-right {
 		display: flex;
 		flex-direction: column;
 		align-items: flex-end;
-		gap: 8px;
+		gap: 6px;
 		flex-shrink: 0;
 	}
 	.item-amount {
-		font-size: 17px;
+		font-size: 16px;
 		font-weight: 800;
 		margin: 0;
 	}
 	.expense-amount {
 		color: var(--red);
 	}
+
 	.item-actions {
 		display: flex;
 		gap: 4px;
 	}
 	.icon-btn {
-		width: 32px;
-		height: 32px;
+		width: 30px;
+		height: 30px;
 		border-radius: 10px;
 		border: none;
 		background: var(--surface2);
 		cursor: pointer;
-		font-size: 14px;
+		font-size: 13px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -435,17 +585,20 @@
 	.icon-btn.danger:hover {
 		background: var(--red-light);
 	}
+
 	.edit-title {
-		margin: 0 0 16px;
-		font-size: 16px;
+		margin: 0 0 14px;
+		font-size: 15px;
+		color: var(--red);
 	}
 	.edit-actions {
 		display: flex;
-		gap: 10px;
-		margin-top: 12px;
+		gap: 8px;
+		margin-top: 10px;
 	}
+
 	.empty-card {
-		padding: 48px;
+		padding: 48px 24px;
 		text-align: center;
 		display: flex;
 		flex-direction: column;
@@ -453,7 +606,7 @@
 		gap: 8px;
 	}
 	.empty-card span {
-		font-size: 48px;
+		font-size: 52px;
 	}
 	.empty-card h3 {
 		margin: 0;
@@ -464,9 +617,10 @@
 		margin: 0 0 16px;
 		font-size: 14px;
 	}
+
 	@media (max-width: 640px) {
 		.page {
-			padding: 20px 16px;
+			padding: 20px 16px 90px;
 		}
 		.form-grid {
 			grid-template-columns: 1fr;
